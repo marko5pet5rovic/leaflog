@@ -42,7 +42,6 @@ class LeafLocationRepository(
         query: String, 
         type: LocationType?, 
         minRating: Double?, 
-        sortBy: SortCriteria
     ): List<LeafLocationDTO> {
         val rawList = dataSource.queryDocuments("locations", "title", query)
         return rawList.map { data -> LeafLocationDTO.fromDataMap(data) }

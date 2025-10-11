@@ -8,7 +8,7 @@
         android:theme="@style/Theme.LeafLog">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".LeafLogApp"
             android:exported="true"
             android:theme="@style/Theme.LeafLog">
             <intent-filter>

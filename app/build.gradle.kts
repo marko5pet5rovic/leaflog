@@ -71,4 +71,8 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.0.0")) 
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
+
+    implementation("io.insert-koin:koin-core:3.5.6") 
+    implementation("io.insert-koin:koin-android:3.5.6") 
+    implementation("io.insert-koin:koin-androidx-compose:3.5.6") 
 }

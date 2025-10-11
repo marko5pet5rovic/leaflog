@@ -1,3 +1,5 @@
+package com.markopetrovic.leaflog.App
+
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
@@ -21,6 +23,7 @@ import com.markopetrovic.leaflog.views.map.MapScreen
 import com.markopetrovic.leaflog.views.leaderboard.LeaderboardScreen
 import com.markopetrovic.leaflog.views.profile.ProfileScreen
 import com.markopetrovic.leaflog.views.addlocation.AddLocationScreen
+
 
 enum class Destination {
     Map,
@@ -66,7 +69,7 @@ fun LeafLogBottomBar(
         items.forEach { (destination, icon) ->
             NavigationBarItem(
                 icon = { Icon(icon, contentDescription = destination.name) },
-                label = { Text(destination.name },
+                label = { Text(destination.name) },
                 selected = currentDestination == destination,
                 onClick = { onDestinationSelected(destination) }
             )
