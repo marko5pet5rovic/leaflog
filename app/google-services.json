@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "527820413709",
-    "project_id": "leaflog-d44bd",
-    "storage_bucket": "leaflog-d44bd.firebasestorage.app"
+    "project_number": "108423752927",
+    "project_id": "leaflog-18f2a",
+    "storage_bucket": "leaflog-18f2a.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:527820413709:android:f778cc1d650c9ca6026e44",
+        "mobilesdk_app_id": "1:108423752927:android:2e9b5c0cc62d0bf4a68d6a",
         "android_client_info": {
           "package_name": "com.markopetrovic.leaflog"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAJk3dNAkpBiG298qvJDDQpbRn-1vN3vfw"
+          "current_key": "AIzaSyCTR16HMMOGQBqyl9-ug3kYBj6wa4GS5hU"
         }
       ],
       "services": {
