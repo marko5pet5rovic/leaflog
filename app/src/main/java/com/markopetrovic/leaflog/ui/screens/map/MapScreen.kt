@@ -20,6 +20,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.location.LocationServices
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import android.location.Location
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.maps.android.compose.*
 import com.markopetrovic.leaflog.navigation.Screen
 import com.markopetrovic.leaflog.ui.viewmodels.MapViewModel
@@ -39,6 +40,7 @@ fun MapScreen(
     paddingValues: PaddingValues,
     localNavController: NavController
 ) {
+    var hasCenteredOnce by remember { mutableStateOf(false) }
     val currentGpsLocation by mapViewModel.currentGpsLocation.collectAsState()
     val showBottomSheet by mapViewModel.showBottomSheet.collectAsState()
     val locations by mapViewModel.locations.collectAsState()
@@ -65,6 +67,16 @@ fun MapScreen(
     LaunchedEffect(currentGpsLocation) {
         if (currentGpsLocation.latitude != 0.0 || currentGpsLocation.longitude != 0.0) {
             gpsMarkerState.position = currentGpsLocation
+        }
+    }
+    LaunchedEffect(currentGpsLocation) {
+        if ((currentGpsLocation.latitude != 0.0 || currentGpsLocation.longitude != 0.0) && !hasCenteredOnce) {
+            val cameraUpdate = CameraUpdateFactory.newLatLngZoom(
+                currentGpsLocation,
+                14f
+            )
+            mapCameraState.animate(cameraUpdate)
+            hasCenteredOnce = true
         }
     }
 
@@ -109,13 +121,6 @@ fun MapScreen(
                             fillColor = colorScheme.primary.copy(alpha = 0.15f)
                         )
                     }
-
-                    Marker(
-                        state = gpsMarkerState,
-                        title = "Your location (GPS)",
-                        snippet = "Current position",
-                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
-                    )
                 }
 
                 locations.forEach { location ->
@@ -170,7 +175,7 @@ fun MapScreen(
         if (isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier
-                    .align(Alignment.TopCenter)
+                    .align(Alignment.Center)
                     .padding(top = 8.dp)
             )
         }

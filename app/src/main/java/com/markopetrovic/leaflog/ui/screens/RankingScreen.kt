@@ -21,10 +21,7 @@ import com.markopetrovic.leaflog.ui.viewmodels.AuthState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.Color
 
-private enum class LeaderboardType(val title: String) {
-    LOCATIONS("Locations"),
-    USERS("Users")
-}
+private enum class LeaderboardType(val title: String) {LOCATIONS("Locations"), USERS("Users") }
 
 @Composable
 fun RankingScreen(

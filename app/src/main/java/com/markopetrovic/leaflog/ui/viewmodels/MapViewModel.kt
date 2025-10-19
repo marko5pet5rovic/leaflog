@@ -2,7 +2,6 @@ package com.markopetrovic.leaflog.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.markopetrovic.leaflog.data.repository.LocationRepository
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.markopetrovic.leaflog.data.models.LocationBase
@@ -17,7 +16,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import android.util.Log
 import com.markopetrovic.leaflog.di.AppContainer
 import kotlinx.coroutines.flow.combine
 
