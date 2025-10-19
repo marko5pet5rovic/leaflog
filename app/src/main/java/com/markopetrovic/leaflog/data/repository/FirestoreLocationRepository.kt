@@ -1,6 +1,7 @@
 package com.markopetrovic.leaflog.data.repository
 
 import InteractionDTO
+import android.location.Location
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -76,6 +77,7 @@ class FirestoreLocationRepository(
             is PlantDTO -> location.copy(userId = currentUserId)
             is MushroomDTO -> location.copy(userId = currentUserId)
             is PlantingSpotDTO -> location.copy(userId = currentUserId)
+            else -> location
         }
         return try {
             collection.add(locationWithUserId).await()
@@ -87,7 +89,8 @@ class FirestoreLocationRepository(
     }
 
     override suspend fun getLocationById(id: String): LocationBase? {
-        return try { val doc = collection.document(id).get().await(); mapDocumentToLocationBase(doc) } catch (e: Exception) { println("Error fetching location by ID: ${e.message}"); null }
+        val doc = collection.document(id).get().await();
+        return mapDocumentToLocationBase(doc)
     }
 
     override suspend fun addPoints(locationId: String, userId: String, points: Int): Boolean {
@@ -122,22 +125,56 @@ class FirestoreLocationRepository(
     }
 
     override suspend fun countUserLocations(userId: String): Int {
-        return try {
-            val snapshot = collection.whereEqualTo("userId", userId).get().await()
-            snapshot.size()
-        } catch (e: Exception) {
-            println("Error counting user locations: ${e.message}")
-            0
-        }
+        val snapshot = collection.whereEqualTo("userId", userId).get().await()
+        return snapshot.size()
     }
 
     override suspend fun sumUserPoints(userId: String): Long {
-        return try {
-            val snapshot = collection.whereEqualTo("userId", userId).get().await()
-            snapshot.documents.sumOf { doc -> (doc.get("points") as? Number)?.toLong() ?: 0L }
-        } catch (e: Exception) {
-            println("ERROR: Manual point summation failed: ${e.message}")
-            0L
+        val snapshot = collection.whereEqualTo("userId", userId).get().await()
+        return snapshot.documents.sumOf { doc -> (doc.get("points") as? Number)?.toLong() ?: 0L }
+    }
+
+    override fun getLocationsWithinRadius(
+        currentLat: Double,
+        currentLon: Double,
+        radiusMeters: Float
+    ): Flow<List<LocationBase>> = callbackFlow {
+        // 1. Define the user's current location object for distance calculation
+        val userLocation = Location("User").apply {
+            latitude = currentLat
+            longitude = currentLon
         }
+
+        // Treat 0.0, 0.0 as an invalid location; if the user hasn't moved, show all or none.
+        // For simplicity, we assume if currentLat/Lon are 0.0, filtering is skipped (but ViewModel controls this)
+
+        val subscription = collection.addSnapshotListener { snapshot, error ->
+            if (error != null) { close(error); return@addSnapshotListener }
+
+            if (snapshot != null) {
+                val allLocations = snapshot.documents.mapNotNull { doc -> mapDocumentToLocationBase(doc) }
+
+                // 2. Filter in-memory using distance calculation
+                val filteredLocations = allLocations.filter { locationBase ->
+                    // Exclude locations with invalid coordinates
+                    if (locationBase.latitude == 0.0 && locationBase.longitude == 0.0) {
+                        return@filter false
+                    }
+
+                    val locationPoint = Location("LocationPoint").apply {
+                        latitude = locationBase.latitude
+                        longitude = locationBase.longitude
+                    }
+
+                    val distance = userLocation.distanceTo(locationPoint)
+
+                    // Include if the distance is within the set radius
+                    distance <= radiusMeters
+                }
+
+                trySend(filteredLocations)
+            }
+        }
+        awaitClose { subscription.remove() }
     }
 }

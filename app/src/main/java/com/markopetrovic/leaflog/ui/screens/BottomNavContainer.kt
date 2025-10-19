@@ -1,10 +1,9 @@
-// file: ui/screens/BottomNavContainer.kt (ФИНАЛНА ИЗМЕНА)
-
 package com.markopetrovic.leaflog.ui.screens
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -18,6 +17,9 @@ import com.markopetrovic.leaflog.navigation.Screen
 import com.markopetrovic.leaflog.navigation.bottomNavItems
 import com.markopetrovic.leaflog.ui.screens.location.create.AddNewPlantScreen
 import com.markopetrovic.leaflog.ui.screens.location.detail.LocationDetailScreen
+import com.markopetrovic.leaflog.ui.screens.map.MapScreen
+import com.markopetrovic.leaflog.ui.screens.profile.ProfileEditScreen
+import com.markopetrovic.leaflog.ui.screens.profile.ProfileScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,21 +27,18 @@ fun BottomNavContainer(
     rootNavController: NavController,
     mapViewModel: MapViewModel
 ) {
-    // localNavController за навигацију унутар Bottom Nav-а
     val localNavController = androidx.navigation.compose.rememberNavController()
     val navBackStackEntry by localNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
     val currentTitle = bottomNavItems.firstOrNull { it.route == currentRoute }?.title ?: "LeafLog"
 
-    // Decide whether to show the Bottom Bar (it should be visible on primary routes)
     val isBottomBarVisible = currentRoute in bottomNavItems.map { it.route }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(currentTitle) },
-                // Navigation icon logic remains, allowing back navigation within the BottomNav stack
                 navigationIcon = {
                     if (localNavController.previousBackStackEntry != null) {
                         IconButton(onClick = { localNavController.navigateUp() }) {
@@ -49,9 +48,15 @@ fun BottomNavContainer(
                 },
                 actions = {
                     if (currentRoute == Screen.BottomNavScreen.Map.route) {
-                        // Само на MapScreen-у приказујемо филтер
                         IconButton(onClick = { mapViewModel.toggleFilterSheet(true) }) {
                             Icon(Icons.Default.List, contentDescription = "Filter Locations")
+                        }
+                    }
+                    if (currentRoute == Screen.BottomNavScreen.Profile.route) {
+                        IconButton(onClick = {
+                            localNavController.navigate(Screen.ProfileEdit.route)
+                        }) {
+                            Icon(Icons.Filled.Edit, contentDescription = "Edit Profile")
                         }
                     }
                 }
@@ -81,27 +86,25 @@ fun BottomNavContainer(
             }
         }
     ) { paddingValues ->
-        // NavHost for Bottom Navigation routes
         NavHost(
-            navController = localNavController, // Користимо локални контролер
+            navController = localNavController,
             startDestination = Screen.BottomNavScreen.Map.route,
             modifier = Modifier
         ) {
             composable(Screen.BottomNavScreen.Map.route) {
                 MapScreen(
-                    navController = rootNavController, // Главни контролер
+                    navController = rootNavController,
                     mapViewModel = mapViewModel,
                     paddingValues = paddingValues,
-                    localNavController = localNavController // Прослеђујемо локални контролер
+                    localNavController = localNavController
                 )
             }
 
-            composable(Screen.BottomNavScreen.Ranking.route) { backStackEntry -> // КЉУЧНА ИСПРАВКА 1: Експлицитно ухвати backStackEntry
+            composable(Screen.BottomNavScreen.Ranking.route) { backStackEntry ->
                 RankingScreen(
                     navController = rootNavController,
                     paddingValues = paddingValues,
-                    // КЉУЧНА ИСПРАВКА 2: Користимо backStackEntry за dobijanje NavController-а
-                    localNavController = localNavController // localNavController је исти као backStackEntry.navController
+                    localNavController = localNavController
                 )
             }
 
@@ -112,15 +115,12 @@ fun BottomNavContainer(
                 )
             }
 
-            // Routes that are not in the bottom bar, but are called from within it
             composable(
-                route = Screen.LocationDetail.route, // "location_detail/{locationId}"
-                // ОВДЕ СЕ РЕШАВА ГРЕШКА: arguments сада постоји у Screen.LocationDetail
+                route = Screen.LocationDetail.route,
                 arguments = Screen.LocationDetail.arguments
             ) { backStackEntry ->
                 val locationId = backStackEntry.arguments?.getString("locationId") ?: return@composable
 
-                // Користимо localNavController за излаз из BottomNavContainer-а
                 LocationDetailScreen(navController = localNavController, locationId = locationId)
 
             }
@@ -129,7 +129,11 @@ fun BottomNavContainer(
                 AddNewPlantScreen(
                     navController = localNavController,
                     mapViewModel = mapViewModel
-                ) // КЉУЧНА ИСПРАВКА 4: Користимо localNavController
+                )
+            }
+
+            composable(Screen.ProfileEdit.route) {
+                ProfileEditScreen(navController = localNavController)
             }
         }
     }

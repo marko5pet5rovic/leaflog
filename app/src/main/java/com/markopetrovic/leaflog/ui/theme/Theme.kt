@@ -14,7 +14,6 @@ private val LightColorScheme = lightColorScheme(
 fun LeafLogTheme(
     content: @Composable () -> Unit
 ) {
-
     MaterialTheme(
         colorScheme = LightColorScheme,
         typography = MaterialTheme.typography,

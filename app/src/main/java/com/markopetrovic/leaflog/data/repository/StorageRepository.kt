@@ -6,7 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.InputStream
 import android.content.Context
-import android.util.Log
+import android.util.Log // Dodato za lakše logovanje grešaka
 
 class StorageRepository(
     private val cloudinary: Cloudinary
@@ -53,7 +53,6 @@ class StorageRepository(
                     )
                     cloudinary.uploader().upload(stream, options)
                 }
-
                 uploadResult["secure_url"] as String?
 
             } catch (e: Exception) {

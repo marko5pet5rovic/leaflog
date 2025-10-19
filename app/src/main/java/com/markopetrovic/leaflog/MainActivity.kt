@@ -1,5 +1,7 @@
 package com.markopetrovic.leaflog
 
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -15,20 +17,32 @@ import androidx.navigation.compose.rememberNavController
 import com.markopetrovic.leaflog.di.AppContainer
 import com.markopetrovic.leaflog.navigation.Screen
 import com.markopetrovic.leaflog.ui.screens.BottomNavContainer
-import com.markopetrovic.leaflog.ui.screens.location.detail.LocationDetailScreen
-import com.markopetrovic.leaflog.ui.screens.LoginScreen
-import com.markopetrovic.leaflog.ui.screens.SignUpScreen
-import com.markopetrovic.leaflog.ui.screens.WelcomeScreen
+import com.markopetrovic.leaflog.ui.screens.profile.LoginScreen
+import com.markopetrovic.leaflog.ui.screens.profile.SignUpScreen
+import com.markopetrovic.leaflog.ui.screens.profile.WelcomeScreen
 import com.markopetrovic.leaflog.ui.screens.location.create.AddNewPlantScreen
 import com.markopetrovic.leaflog.ui.screens.location.create.AddNewMushroomScreen
 import com.markopetrovic.leaflog.ui.screens.location.create.AddNewPlantingSpotScreen
+
 import com.markopetrovic.leaflog.ui.theme.LeafLogTheme
 import com.markopetrovic.leaflog.ui.viewmodels.MapViewModel
-import com.markopetrovic.leaflog.ui.viewmodels.MapViewModelFactory
+
+import com.markopetrovic.leaflog.services.notifications.NotificationService
+import com.markopetrovic.leaflog.ui.screens.location.detail.LocationDetailScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val serviceIntent = Intent(this, NotificationService::class.java)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
+
+
         setContent {
             LeafLogTheme {
                 Surface(
@@ -45,9 +59,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun LeafLogAppNavigation() {
     val navController = rememberNavController()
-    val mapViewModel: MapViewModel = viewModel(
-        factory = MapViewModelFactory(AppContainer.locationRepository)
-    )
+    val mapViewModel: MapViewModel = viewModel()
 
     NavHost(
         navController = navController,

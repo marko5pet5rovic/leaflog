@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.markopetrovic.leaflog.ui.screens.location.detail
 
 import androidx.compose.foundation.Image
@@ -10,40 +12,25 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.markopetrovic.leaflog.data.models.MushroomDTO
-import com.markopetrovic.leaflog.di.AppContainer
+import com.markopetrovic.leaflog.data.models.ProfileDTO
 import com.markopetrovic.leaflog.ui.screens.common.DetailRow
 import com.markopetrovic.leaflog.ui.screens.common.UserTile
-import com.markopetrovic.leaflog.ui.viewmodels.MushroomDetailViewModel
-import com.markopetrovic.leaflog.ui.viewmodels.MushroomDetailViewModelFactory
 
 @Composable
 fun MushroomDetailScreen(
-    mushroom: MushroomDTO
+    location: MushroomDTO,
+    publisher: ProfileDTO,
+    onGivePoints: () -> Unit,
+    userAlreadyInteracted: Boolean
 ) {
-    val viewModel: MushroomDetailViewModel = viewModel(
-        factory = MushroomDetailViewModelFactory(
-            initialLocation = mushroom,
-            locationRepository = AppContainer.locationRepository,
-            authRepository = AppContainer.authRepository,
-            profileRepository = AppContainer.profileRepository
-        )
-    )
-
-    val currentMushroom by viewModel.location.collectAsState()
-    val userAlreadyInteracted by viewModel.userAlreadyInteracted.collectAsState()
-    val currentPublisher by viewModel.publisher.collectAsState()
-
     val scrollState = rememberScrollState()
 
     Column(
@@ -58,14 +45,14 @@ fun MushroomDetailScreen(
                 .height(250.dp)
                 .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
         ) {
-            val painter = rememberAsyncImagePainter(model = currentMushroom.imageUrl)
+            val painter = rememberAsyncImagePainter(model = location.imageUrl)
             Image(
                 painter = painter,
-                contentDescription = "Photo of ${currentMushroom.name}",
+                contentDescription = "Photo of ${location.name}",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
-            if (currentMushroom.imageUrl.isNullOrBlank()) {
+            if (location.imageUrl.isNullOrBlank()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("No Image Available", color = Color.White)
                 }
@@ -73,9 +60,9 @@ fun MushroomDetailScreen(
         }
 
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = currentMushroom.name, style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
+            Text(text = location.name, style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
             Text(
-                text = "Mushroom - Habitat: ${currentMushroom.habitat}",
+                text = "Mushroom - Habitat: ${location.habitat}",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -85,7 +72,7 @@ fun MushroomDetailScreen(
                 Icon(Icons.Default.Star, contentDescription = "Total Points", tint = MaterialTheme.colorScheme.secondary)
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = "${currentMushroom.points} Points",
+                    text = "${location.points} Points",
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.secondary
                 )
@@ -95,36 +82,32 @@ fun MushroomDetailScreen(
             Divider()
             Spacer(modifier = Modifier.height(8.dp))
             Text("Logged by:", style = MaterialTheme.typography.labelMedium)
-            currentPublisher?.let {
-                UserTile(publisher = it)
-            } ?: Text("Loading publisher...", style = MaterialTheme.typography.bodyMedium)
+            UserTile(publisher = publisher)
             Spacer(modifier = Modifier.height(8.dp))
             Divider()
             Spacer(modifier = Modifier.height(16.dp))
 
-            DetailRow(title = "Description", content = currentMushroom.description)
+            DetailRow(title = "Description", content = location.description)
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = if (currentMushroom.isEdible) "Edible (Very rare!)" else "Not Edible / Unknown",
+                text = if (location.isEdible) "Edible (Very rare!)" else "Non-Edible / Unknown",
                 style = MaterialTheme.typography.titleMedium,
-                color = if (currentMushroom.isEdible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                color = if (location.isEdible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
             )
             Spacer(modifier = Modifier.height(24.dp))
 
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text(text = "Coordinates", style = MaterialTheme.typography.titleSmall)
-                    Text(text = "Lat: ${currentMushroom.latitude}, Lon: ${currentMushroom.longitude}", style = MaterialTheme.typography.bodyMedium)
+                    Text(text = "Lat: ${location.latitude}, Lon: ${location.longitude}", style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+        modifier = Modifier.fillMaxSize().padding(16.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
         Card(
@@ -142,11 +125,11 @@ fun MushroomDetailScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Star, contentDescription = "Total Points", tint = MaterialTheme.colorScheme.secondary)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "${currentMushroom.points} Points", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.secondary)
+                    Text(text = "${location.points} Points", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.secondary)
                 }
 
                 Button(
-                    onClick = viewModel::givePoints,
+                    onClick = onGivePoints,
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                     enabled = !userAlreadyInteracted
                 ) {

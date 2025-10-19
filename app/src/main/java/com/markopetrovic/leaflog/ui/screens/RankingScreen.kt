@@ -15,10 +15,11 @@ import androidx.navigation.NavController
 import com.markopetrovic.leaflog.di.AppContainer
 import com.markopetrovic.leaflog.navigation.Screen
 import com.markopetrovic.leaflog.ui.viewmodels.RankingViewModel
-import com.markopetrovic.leaflog.data.models.LocationBase
 import com.markopetrovic.leaflog.data.models.ProfileDTO
-import com.markopetrovic.leaflog.services.auth.AuthState
-import com.markopetrovic.leaflog.services.auth.AuthViewModel
+import com.markopetrovic.leaflog.ui.viewmodels.AuthViewModel
+import com.markopetrovic.leaflog.ui.viewmodels.AuthState
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
 
 private enum class LeaderboardType(val title: String) {
     LOCATIONS("Locations"),
@@ -33,7 +34,10 @@ fun RankingScreen(
     authViewModel: AuthViewModel = viewModel()
 ) {
     val authState by authViewModel.authState.collectAsState()
-    val currentUserId: String? = (authState as? AuthState.Authenticated)?.uid
+    val currentUserId: String? = when (val state = authState) {
+        is AuthState.Authenticated -> state.uid
+        else -> null
+    }
 
     val viewModel: RankingViewModel = viewModel(
         factory = RankingViewModel.RankingViewModelFactory(
@@ -50,26 +54,37 @@ fun RankingScreen(
     var selectedTab by remember { mutableStateOf(LeaderboardType.LOCATIONS) }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(paddingValues)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
     ) {
-        TabRow(selectedTabIndex = selectedTab.ordinal) {
+        TabRow(
+            selectedTabIndex = selectedTab.ordinal,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             LeaderboardType.entries.forEachIndexed { index, type ->
                 Tab(
                     selected = selectedTab.ordinal == index,
                     onClick = { selectedTab = type },
-                    text = { Text(type.title) }
+                    text = { Text(type.title, fontWeight = FontWeight.SemiBold) }
                 )
             }
         }
 
         if (isLoading) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-            Text("Loading rankings...", modifier = Modifier.padding(16.dp))
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(48.dp)
+                )
+            }
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 when (selectedTab) {
                     LeaderboardType.LOCATIONS -> {
@@ -79,8 +94,10 @@ fun RankingScreen(
                                 title = location.name,
                                 points = location.points,
                                 isTop3 = index < 3,
+                                isCurrentUser = false,
                                 onClick = {
-                                    localNavController.navigate(Screen.LocationDetail.createRoute(location.id))
+                                    val route = Screen.LocationDetail.createRoute(location.id)
+                                    localNavController.navigate(route)
                                 }
                             )
                         }
@@ -89,16 +106,14 @@ fun RankingScreen(
                         itemsIndexed(userRankings) { index, profile ->
                             if (profile is ProfileDTO) {
                                 val isCurrentUser = profile.uid == currentUserId
-                                val title = if (isCurrentUser) "${profile.username} (You)" else profile.username
 
                                 RankingCard(
                                     index = index,
-                                    title = title,
+                                    title = if (isCurrentUser) "${profile.username} (You)" else profile.username,
                                     points = profile.totalPoints,
                                     isTop3 = index < 3,
-                                    onClick = if (!isCurrentUser) {
-                                        { /* localNavController.navigate(Screen.ProfileDetail.createRoute(profile.uid)) */ }
-                                    } else null
+                                    isCurrentUser = isCurrentUser,
+                                    onClick = null
                                 )
                             }
                         }
@@ -115,32 +130,65 @@ private fun RankingCard(
     title: String,
     points: Int,
     isTop3: Boolean,
+    isCurrentUser: Boolean,
     onClick: (() -> Unit)? = null
 ) {
+    val rank1Color = Color(0xFFFFC107)
+    val rank2Color = Color(0xFF90A4AE)
+    val rank3Color = Color(0xFFA1887F)
+
+    val rankColor = when (index) {
+        0 -> rank1Color
+        1 -> rank2Color
+        2 -> rank3Color
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    val containerColor = when {
+        isCurrentUser -> MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+        isTop3 -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        else -> MaterialTheme.colorScheme.surface
+    }
+
+    val titleTextColor = if (isCurrentUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+
     Card(
         onClick = { onClick?.invoke() },
         enabled = onClick != null,
         modifier = Modifier.fillMaxWidth(),
-        colors = if (isTop3) CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer) else CardDefaults.cardColors()
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isCurrentUser || isTop3) 6.dp else 2.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 14.dp, horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "#${index + 1}",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.width(40.dp)
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Black,
+                    color = if (isTop3) rankColor else MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                modifier = Modifier.width(48.dp)
             )
             Spacer(modifier = Modifier.width(16.dp))
+
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
+                fontWeight = if (isCurrentUser) FontWeight.Bold else FontWeight.Medium,
+                color = titleTextColor,
                 modifier = Modifier.weight(1f)
             )
+
             Text(
                 text = "$points pts",
-                style = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.secondary)
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.secondary
+                )
             )
         }
     }

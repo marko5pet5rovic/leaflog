@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.markopetrovic.leaflog.ui.screens.location.create
 
 import androidx.compose.foundation.layout.*
@@ -8,14 +10,12 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.ui.Alignment
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.markopetrovic.leaflog.di.AppContainer
-import com.markopetrovic.leaflog.ui.viewmodels.AddNewPlantingSpotViewModel
-import com.markopetrovic.leaflog.ui.viewmodels.AddNewPlantingSpotViewModelFactory
+import com.markopetrovic.leaflog.ui.viewmodels.location.create.AddNewPlantingSpotViewModel
+import com.markopetrovic.leaflog.ui.viewmodels.location.create.AddNewPlantingSpotViewModelFactory
 import com.markopetrovic.leaflog.ui.viewmodels.MapViewModel
-import com.markopetrovic.leaflog.ui.viewmodels.NavigationEvent
-import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.ui.Alignment
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,18 +37,11 @@ fun AddNewPlantingSpotScreen(
 
     val isReadyToSave = name.isNotBlank() && description.isNotBlank() && soilType.isNotBlank()
 
-    LaunchedEffect(Unit) {
-        viewModel.navigationEvents.collectLatest { event ->
-            if (event is NavigationEvent.PopBackStack) {
-                navController.popBackStack()
-            }
-        }
-    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("New Planting Spot 🌳") },
+                title = { Text("New Planting Spot") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
@@ -76,9 +69,7 @@ fun AddNewPlantingSpotScreen(
                 value = description,
                 onValueChange = viewModel::updateDescription,
                 label = { Text("Description / Notes") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp)
+                modifier = Modifier.fillMaxWidth().height(100.dp)
             )
 
             OutlinedTextField(
@@ -103,10 +94,11 @@ fun AddNewPlantingSpotScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
-                onClick = viewModel::savePlantingSpot,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                onClick = {
+                    viewModel.savePlantingSpot()
+                    navController.popBackStack()
+                },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
                 enabled = isReadyToSave
             ) {
                 Text("Save New Planting Spot")

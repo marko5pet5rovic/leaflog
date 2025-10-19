@@ -3,40 +3,96 @@
 package com.markopetrovic.leaflog.ui.screens.location.detail
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.markopetrovic.leaflog.data.models.LocationBase
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.markopetrovic.leaflog.di.AppContainer
 import com.markopetrovic.leaflog.data.models.PlantDTO
 import com.markopetrovic.leaflog.data.models.MushroomDTO
 import com.markopetrovic.leaflog.data.models.PlantingSpotDTO
+import com.markopetrovic.leaflog.ui.viewmodels.PlantDetailViewModel
+import com.markopetrovic.leaflog.ui.viewmodels.PlantDetailViewModelFactory
 
 @Composable
 fun LocationDetailScreen(
-    location: LocationBase,
+    navController: NavController,
+    locationId: String
 ) {
+    val locationViewModel: PlantDetailViewModel = viewModel(
+        key = locationId,
+        factory = PlantDetailViewModelFactory(
+            locationId = locationId,
+            locationRepository = AppContainer.locationRepository,
+            profileRepository = AppContainer.profileRepository,
+            authRepository = AppContainer.authRepository
+        )
+    )
+
+    val location by locationViewModel.location.collectAsState()
+    val publisher by locationViewModel.publisher.collectAsState()
+    val isLoading by locationViewModel.isLoading.collectAsState()
+    val userAlreadyInteracted by locationViewModel.userAlreadyInteracted.collectAsState()
+
+    val title = if (isLoading) "Loading Details..." else location?.name ?: "Location Not Found"
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(location.name) },
+                title = { Text(title) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
             )
         }
     ) { paddingValues ->
         Box(
             modifier = Modifier.fillMaxSize().padding(paddingValues),
-            contentAlignment = Alignment.TopCenter
+            contentAlignment = Alignment.Center
         ) {
-            when (location) {
-                is PlantDTO -> {
-                    PlantDetailScreen(plant = location)
+            when {
+                isLoading -> {
+                    CircularProgressIndicator()
                 }
-                is MushroomDTO -> {
-                    MushroomDetailScreen(mushroom = location)
+
+                location is PlantDTO && publisher != null -> {
+                    PlantDetailScreen(
+                        location = location as PlantDTO,
+                        publisher = publisher!!,
+                        onGivePoints = locationViewModel::givePoints,
+                        userAlreadyInteracted = userAlreadyInteracted
+                    )
                 }
-                is PlantingSpotDTO -> {
-                    PlantingSpotDetailScreen(plantingSpot = location)
+
+                location is MushroomDTO && publisher != null -> {
+                    MushroomDetailScreen(
+                        location = location as MushroomDTO,
+                        publisher = publisher!!,
+                        onGivePoints = locationViewModel::givePoints,
+                        userAlreadyInteracted = userAlreadyInteracted
+                    )
+                }
+
+                location is PlantingSpotDTO && publisher != null -> {
+                    PlantingSpotDetailScreen(
+                        location = location as PlantingSpotDTO,
+                        publisher = publisher!!,
+                        onGivePoints = locationViewModel::givePoints,
+                        userAlreadyInteracted = userAlreadyInteracted
+                    )
+                }
+
+                else -> {
+                    Text(
+                        "Location details unavailable or ID mismatch. Type: ${location?.typeString ?: "Unknown"}",
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         }

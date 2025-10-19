@@ -10,6 +10,7 @@ import com.markopetrovic.leaflog.data.models.ProfileDTO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
@@ -48,14 +49,16 @@ class RankingViewModel(
             }
         }
     }
-
     private fun combineUserRankings() {
         viewModelScope.launch {
             topUsersFlow.collect { fetchedUsers ->
                 var mutableUsers = fetchedUsers.toMutableList()
 
                 if (!currentUserId.isNullOrEmpty()) {
-                    val currentPoints = locationRepository.sumUserPoints(currentUserId).toInt()
+
+                    val currentPointsLong = locationRepository.sumUserPoints(currentUserId)
+                    val currentPoints = currentPointsLong.toInt()
+
                     val currentUserIndex = mutableUsers.indexOfFirst { it.uid == currentUserId }
 
                     if (currentUserIndex != -1) {
@@ -67,18 +70,15 @@ class RankingViewModel(
                             mutableUsers.add(currentUserProfile.copy(totalPoints = currentPoints))
                         }
                     }
-
                     mutableUsers = mutableUsers
                         .sortedByDescending { it.totalPoints }
                         .take(10)
                         .toMutableList()
                 }
-
                 _userRankings.value = mutableUsers
             }
         }
     }
-
     class RankingViewModelFactory(
         private val locationRepository: LocationRepository,
         private val profileRepository: ProfileRepository,

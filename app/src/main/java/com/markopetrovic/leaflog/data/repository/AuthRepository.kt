@@ -1,5 +1,5 @@
 package com.markopetrovic.leaflog.data.repository
-import com.markopetrovic.leaflog.services.auth.AuthState
+import com.markopetrovic.leaflog.ui.viewmodels.AuthState
 import kotlinx.coroutines.flow.StateFlow
 
 interface AuthRepository {

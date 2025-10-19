@@ -46,7 +46,6 @@ class ProfileViewModel(
     private val _totalPoints = MutableStateFlow(0)
     val totalPoints: StateFlow<Int> = _totalPoints.asStateFlow()
 
-
     init {
         loadProfile()
         loadStatistics()
@@ -56,7 +55,9 @@ class ProfileViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             val fetchedProfile = profileRepository.getUserProfile(currentUserId)
+
             val initialProfile = fetchedProfile ?: ProfileDTO(uid = currentUserId, username = "New User")
+
             _profile.value = initialProfile
             _editableProfile.value = initialProfile.copy()
         }
@@ -65,18 +66,30 @@ class ProfileViewModel(
     private fun loadStatistics() {
         viewModelScope.launch {
             _totalLocationsCount.value = locationRepository.countUserLocations(currentUserId)
-            _totalPoints.value = locationRepository.sumUserPoints(currentUserId).toInt()
+
+            val pointsLong = locationRepository.sumUserPoints(currentUserId)
+            _totalPoints.value = pointsLong.toInt()
+
             _isLoading.value = false
         }
+    }
+
+    fun startEditingSession() {
+        val profileDataToCopy = _profile.value ?: ProfileDTO(uid = currentUserId)
+
+        _editableProfile.value = profileDataToCopy.copy()
+        _selectedImageUri.value = null
+        _saveStatus.value = null
     }
 
     fun setSelectedImageUri(uri: Uri?) {
         _selectedImageUri.value = uri
     }
 
-    fun setEditMode(isEditing: Boolean) {
-        _isEditing.value = isEditing
-        if (!isEditing) {
+    fun toggleEditMode() {
+        val newState = !_isEditing.value
+        _isEditing.value = newState
+        if (!newState) {
             _editableProfile.value = _profile.value?.copy() ?: ProfileDTO(uid = currentUserId)
             _selectedImageUri.value = null
         }
@@ -101,10 +114,11 @@ class ProfileViewModel(
             _saveStatus.value = null
 
             var profileToSave = _editableProfile.value.copy(uid = currentUserId)
-            val imageUri = _selectedImageUri.value
 
+            val imageUri = _selectedImageUri.value
             if (imageUri != null) {
                 _saveStatus.value = "Uploading image..."
+
                 val downloadUrl = storageRepository.uploadAvatar(currentUserId, imageUri, context)
                 if (downloadUrl != null) {
                     profileToSave = profileToSave.copy(avatarUrl = downloadUrl)
@@ -121,6 +135,7 @@ class ProfileViewModel(
                 _isEditing.value = false
                 _selectedImageUri.value = null
                 _saveStatus.value = "Profile saved successfully!"
+
                 loadStatistics()
             } else {
                 _saveStatus.value = "Failed to save profile. Please try again."

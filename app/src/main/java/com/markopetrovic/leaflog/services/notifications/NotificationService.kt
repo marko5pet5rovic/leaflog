@@ -3,157 +3,128 @@ package com.markopetrovic.leaflog.services.notifications
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
+import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
+import android.location.Location
 import android.os.Build
+import android.os.IBinder
 import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
+import com.google.android.gms.location.LocationServices
 import com.markopetrovic.leaflog.R
 import com.markopetrovic.leaflog.data.models.LocationBase
-import com.markopetrovic.leaflog.data.models.PlantDTO
-import com.markopetrovic.leaflog.data.models.MushroomDTO
-import com.markopetrovic.leaflog.data.models.PlantingSpotDTO
+import com.markopetrovic.leaflog.data.repository.LocationRepository
+import com.markopetrovic.leaflog.di.AppContainer
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collectLatest
 
-class NotificationService(private val context: Context) {
+private const val NOTIFICATION_CHANNEL_ID = "NEW_PLANTS_CHANNEL"
+private const val FOREGROUND_NOTIFICATION_ID = 100
+private const val NOTIFICATION_ID_BASE = 200
+private const val RADIUS = 50f //50m
 
-    companion object {
-        private const val CHANNEL_ID = "nearby_locations_channel"
-        private const val CHANNEL_NAME = "Nearby Locations"
-        private const val CHANNEL_DESCRIPTION = "Notifications about locations near you"
-        const val NOTIFICATION_ID_NEARBY = 1001
-        private const val MIN_NOTIFICATION_INTERVAL = 5 * 60 * 1000L
+class NotificationService : Service() {
+
+    private val job = Job()
+    private val scope = CoroutineScope(Dispatchers.IO + job)
+    private var locationIDs = mutableListOf<String>()
+
+    private val locationRepository: LocationRepository by lazy {
+        AppContainer.locationRepository
     }
 
-    private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-    private val notifiedObjects = mutableSetOf<String>()
-    private var lastNotificationTime = 0L
-
-    init {
+    override fun onCreate() {
+        super.onCreate()
         createNotificationChannel()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        startForeground(FOREGROUND_NOTIFICATION_ID, buildForegroundNotification())
+
+        startLocationMonitoring()
+
+        return START_STICKY
+    }
+
+    private fun startLocationMonitoring() {
+        var context = this;
+        scope.launch {
+
+
+            val fusedLocationClient =LocationServices.getFusedLocationProviderClient(context)
+
+            try {
+                fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
+                    location?.let {
+
+                        CoroutineScope(Dispatchers.Main + job).launch {
+                            locationRepository.getLocationsWithinRadius(
+                                currentLat = location.latitude,
+                                currentLon = location.longitude,
+                                radiusMeters = RADIUS
+                            ).collectLatest { fetchedLocations ->
+                                var meantime = locationIDs.isNotEmpty()
+
+                                for (location in fetchedLocations) {
+                                    if (!locationIDs.contains(location.id)) {
+                                        locationIDs.add(location.id)
+                                        if (meantime) showNotification(location);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e: SecurityException) { /* Handle security exception */ }
+        }
+    }
+
+    override fun onDestroy() {
+        job.cancel()
+        super.onDestroy()
+    }
+
+    override fun onBind(intent: Intent?): IBinder? {
+        return null
+    }
+
+    private fun buildForegroundNotification(): android.app.Notification {
+        return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("LeafLog notifikacioni servis aktivan")
+            .setContentText("Aplikacija proverava nove biljke u pozadini.")
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
+            .build()
     }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                CHANNEL_ID,
-                CHANNEL_NAME,
+                NOTIFICATION_CHANNEL_ID,
+                "New plants",
                 NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = CHANNEL_DESCRIPTION
-                enableVibration(true)
-                setShowBadge(true)
-            }
-            notificationManager.createNotificationChannel(channel)
-        }
-    }
-
-    fun hasNotificationPermission(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
-        } else {
-            true
+            )
+            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            manager.createNotificationChannel(channel)
         }
     }
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-    fun showNearbyObjectsNotification(objects: List<LocationBase>): Boolean {
-        if (!hasNotificationPermission()) return false
+    private fun showNotification(location: LocationBase) {
 
-        val currentTime = System.currentTimeMillis()
-        if (currentTime - lastNotificationTime < MIN_NOTIFICATION_INTERVAL) return false
-
-        val newObjects = objects.filter { it.id.isNotBlank() && it.id !in notifiedObjects }
-
-        if (newObjects.isEmpty()) return false
-
-        val title = when {
-            newObjects.size == 1 -> "New Location Nearby"
-            else -> "Nearby Locations (${newObjects.size})"
-        }
-
-        val message = formatObjectsMessage(newObjects)
-
-        sendNotification(
-            notificationId = NOTIFICATION_ID_NEARBY,
-            title = title,
-            message = message,
-            priority = NotificationCompat.PRIORITY_DEFAULT
-        )
-
-        notifiedObjects.addAll(newObjects.map { it.id })
-        lastNotificationTime = currentTime
-
-        return true
-    }
-
-    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-    private fun sendNotification(
-        notificationId: Int,
-        title: String,
-        message: String,
-        priority: Int = NotificationCompat.PRIORITY_DEFAULT,
-        channelId: String = CHANNEL_ID
-    ) {
-        val intent = context.packageManager
-            .getLaunchIntentForPackage(context.packageName)
-            ?.apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            }
-
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            notificationId,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        val notification = NotificationCompat.Builder(context, channelId)
+        val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle(title)
-            .setContentText(message)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
-            .setPriority(priority)
-            .setContentIntent(pendingIntent)
+            .setContentTitle(location.name)
+            .setContentText(location.description)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .build()
 
-        try {
-            NotificationManagerCompat.from(context).notify(notificationId, notification)
-        } catch (e: SecurityException) {
-            e.printStackTrace()
-        }
+        val notificationId = NOTIFICATION_ID_BASE + location.id.hashCode()
+
+        NotificationManagerCompat.from(this).notify(notificationId, notification)
     }
-
-    private fun formatObjectsMessage(objects: List<LocationBase>): String {
-        val titles = objects.map {
-            (it as? PlantDTO)?.name
-                ?: (it as? MushroomDTO)?.name
-                ?: (it as? PlantingSpotDTO)?.name
-                ?: it.typeString
-                ?: "Unknown Location"
-        }
-
-        return when {
-            titles.size == 1 -> titles.first()
-            titles.size <= 3 -> titles.joinToString(", ")
-            else -> "${titles.take(2).joinToString(", ")} and ${titles.size - 2} more"
-        }
-    }
-
-    fun resetNotifiedObjects() { notifiedObjects.clear() }
-
-    fun resetObjectsOutsideRadius(currentObjects: List<LocationBase>) {
-        val currentIds = currentObjects.map { it.id }.toSet()
-        notifiedObjects.retainAll(currentIds)
-    }
-
-    fun cancelNotification(notificationId: Int) { notificationManager.cancel(notificationId) }
 }

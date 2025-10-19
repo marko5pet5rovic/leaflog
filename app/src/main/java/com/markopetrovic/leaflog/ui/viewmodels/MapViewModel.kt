@@ -6,6 +6,9 @@ import com.markopetrovic.leaflog.data.repository.LocationRepository
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.markopetrovic.leaflog.data.models.LocationBase
+import com.markopetrovic.leaflog.data.models.PlantingSpotDTO
+import com.markopetrovic.leaflog.data.models.PlantDTO
+import com.markopetrovic.leaflog.data.models.MushroomDTO
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,22 +17,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import android.location.Location
+import android.util.Log
+import com.markopetrovic.leaflog.di.AppContainer
+import kotlinx.coroutines.flow.combine
 
-private const val MAX_RADIUS_METERS = 50000f // 50km
+private const val MAX_RADIUS_METERS = 5000f // 5km
+private const val TAG = "MapViewModel"
+enum class LocationFilter { ALL, PLANTS, MUSHROOMS, PLANTING_SPOTS }
 
-enum class LocationFilter {
-    ALL,
-    PLANTS,
-    MUSHROOMS,
-    PLANTING_SPOTS
-}
+class MapViewModel() : ViewModel() {
 
-class MapViewModel(
-    private val repository: LocationRepository
-) : ViewModel() {
-
-    private val defaultInitialLocation = LatLng(44.787197, 20.457273) //Beograd
+    private val repository = AppContainer.locationRepository
+    private val defaultInitialLocation = LatLng(44.787197, 20.457273)
 
     private val _currentGpsLocation = MutableStateFlow(defaultInitialLocation)
     val currentGpsLocation = _currentGpsLocation.asStateFlow()
@@ -65,7 +64,7 @@ class MapViewModel(
 
 
     init {
-        loadLocations()
+        startLocationCollection()
     }
 
     fun updateGpsLocation(latLng: LatLng) {
@@ -92,36 +91,34 @@ class MapViewModel(
     fun toggleFilterSheet(show: Boolean? = null) {
         _showFilterSheet.update { show ?: !it }
     }
-    fun isLocationWithinRadius(location: LocationBase): Boolean {
-        val currentRadius = _radiusFilter.value
 
-        if (currentRadius >= MAX_RADIUS_METERS) {
-            return true
-        }
-
-        if (_currentGpsLocation.value.latitude == 0.0 && _currentGpsLocation.value.longitude == 0.0) {
-            return false
-        }
-
-        val loc1 = Location("").apply {
-            latitude = _currentGpsLocation.value.latitude
-            longitude = _currentGpsLocation.value.longitude
-        }
-        val loc2 = Location("").apply {
-            latitude = location.latitude
-            longitude = location.longitude
-        }
-
-        val distanceInMeters = loc1.distanceTo(loc2)
-        return distanceInMeters <= currentRadius
-    }
-
-    private fun loadLocations() {
+    private fun startLocationCollection() {
         viewModelScope.launch {
-            _isLoading.value = true
-            repository.getAllLocations().collectLatest { fetchedLocations ->
-                _locations.value = fetchedLocations
-                _isLoading.value = false
+            combine(_currentGpsLocation, _radiusFilter, _activeFilter) { location, radius, filter ->
+                Triple(location, radius, filter)
+            }.collectLatest { (location, radius, activeFilter) ->
+
+                _isLoading.value = true
+
+                repository.getLocationsWithinRadius(
+                    currentLat = location.latitude,
+                    currentLon = location.longitude,
+                    radiusMeters = radius
+                ).collectLatest { fetchedLocations ->
+
+                    val finalLocations = fetchedLocations.filter { loc ->
+                        when (activeFilter) {
+                            LocationFilter.ALL -> true
+                            LocationFilter.PLANTS -> loc is PlantDTO
+                            LocationFilter.MUSHROOMS -> loc is MushroomDTO
+                            LocationFilter.PLANTING_SPOTS -> loc is PlantingSpotDTO
+                        }
+                    }
+
+                    _locations.value = finalLocations
+
+                    _isLoading.value = false
+                }
             }
         }
     }

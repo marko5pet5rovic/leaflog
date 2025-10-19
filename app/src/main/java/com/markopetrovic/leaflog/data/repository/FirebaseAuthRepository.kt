@@ -3,7 +3,7 @@ package com.markopetrovic.leaflog.data.repository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
 import com.markopetrovic.leaflog.data.models.ProfileDTO
-import com.markopetrovic.leaflog.services.auth.AuthState
+import com.markopetrovic.leaflog.ui.viewmodels.AuthState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

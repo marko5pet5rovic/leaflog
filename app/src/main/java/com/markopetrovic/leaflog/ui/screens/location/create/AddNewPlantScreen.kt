@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalPermissionsApi::class)
+
 package com.markopetrovic.leaflog.ui.screens.location.create
 
 import androidx.compose.foundation.layout.*
@@ -6,19 +8,25 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.google.accompanist.permissions.rememberPermissionState
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.FileProvider
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import java.io.File
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.markopetrovic.leaflog.di.AppContainer
-import com.markopetrovic.leaflog.ui.viewmodels.AddNewPlantViewModel
-import com.markopetrovic.leaflog.ui.viewmodels.AddNewPlantViewModelFactory
+import com.markopetrovic.leaflog.ui.viewmodels.location.create.AddNewPlantViewModel
+import com.markopetrovic.leaflog.ui.viewmodels.location.create.AddNewPlantViewModelFactory
 import com.markopetrovic.leaflog.ui.viewmodels.MapViewModel
-import com.markopetrovic.leaflog.ui.viewmodels.NavigationEvent
-import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.ui.Alignment
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AddNewPlantScreen(
     navController: NavController,
@@ -40,15 +48,27 @@ fun AddNewPlantScreen(
     val isSaving by viewModel.isSaving.collectAsState()
 
     val isReadyToSave = name.isNotBlank() && description.isNotBlank() && imagePath != null
+
     val context = LocalContext.current
 
-    LaunchedEffect(Unit) {
-        viewModel.navigationEvents.collectLatest { event ->
-            if (event is NavigationEvent.PopBackStack) {
-                navController.popBackStack()
+    val tempFile = remember { File(context.cacheDir, "temp_photo.jpg") }
+    val tempUri = remember {
+        FileProvider.getUriForFile(
+            context,
+            context.packageName + ".fileprovider",
+            tempFile
+        )
+    }
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture(),
+        onResult = { success ->
+            if (success) {
+                viewModel.updateImagePath(tempUri.toString())
             }
         }
-    }
+    )
+
+    val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
     Scaffold(
         topBar = {
@@ -69,11 +89,21 @@ fun AddNewPlantScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            CameraPermissionAndLauncher(
-                onImageTaken = viewModel::updateImagePath,
-                isSaving = isSaving,
-                imagePath = imagePath
-            )
+            OutlinedButton(
+                onClick = {
+                    if (cameraPermissionState.status.isGranted) {
+                        cameraLauncher.launch(tempUri)
+                    } else {
+                        cameraPermissionState.launchPermissionRequest()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isSaving
+            ) {
+                Text(
+                    if (imagePath == null) "Take Plant Photo (Required)" else "Photo Saved (Retake)"
+                )
+            }
 
             OutlinedTextField(
                 value = name,
@@ -95,9 +125,7 @@ fun AddNewPlantScreen(
                 value = description,
                 onValueChange = viewModel::updateDescription,
                 label = { Text("Description") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp),
+                modifier = Modifier.fillMaxWidth().height(100.dp),
                 enabled = !isSaving
             )
 
@@ -105,27 +133,23 @@ fun AddNewPlantScreen(
                 value = careTips,
                 onValueChange = viewModel::updateCareTips,
                 label = { Text("Care Tips") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp),
+                modifier = Modifier.fillMaxWidth().height(100.dp),
                 enabled = !isSaving
             )
 
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
-                onClick = { viewModel.savePlant(context) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                onClick = {
+                    viewModel.savePlant(context) {
+                        navController.popBackStack()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
                 enabled = isReadyToSave && !isSaving
             ) {
                 if (isSaving) {
-                    CircularProgressIndicator(
-                        Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
+                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
                 } else {
                     Text("Save New Plant")
                 }
