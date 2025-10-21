@@ -37,28 +37,12 @@ class FirestoreLocationRepository(
         }
     }
 
-    override fun getAllLocations(): Flow<List<LocationBase>> = callbackFlow {
-        val subscription = collection.addSnapshotListener { snapshot, error ->
-            if (error != null) { close(error); return@addSnapshotListener }
-            if (snapshot != null) {
-                val locations = snapshot.documents.mapNotNull { doc -> mapDocumentToLocationBase(doc) }
-                trySend(locations)
-            }
-        }
-        awaitClose { subscription.remove() }
-    }
-
     override fun getLiveTopLocations(limit: Long): Flow<List<LocationBase>> = callbackFlow {
         val query = collection
             .orderBy("points", Query.Direction.DESCENDING)
             .limit(limit)
 
         val subscription = query.addSnapshotListener { snapshot, error ->
-            if (error != null) {
-                close(error)
-                println("ERROR fetching live top locations: ${error.message}")
-                return@addSnapshotListener
-            }
             if (snapshot != null) {
                 val locations = snapshot.documents.mapNotNull { doc -> mapDocumentToLocationBase(doc) }
                 trySend(locations)
@@ -139,27 +123,24 @@ class FirestoreLocationRepository(
         currentLon: Double,
         radiusMeters: Float
     ): Flow<List<LocationBase>> = callbackFlow {
-        // 1. Define the user's current location object for distance calculation
         val userLocation = Location("User").apply {
             latitude = currentLat
             longitude = currentLon
         }
 
-        // Treat 0.0, 0.0 as an invalid location; if the user hasn't moved, show all or none.
-        // For simplicity, we assume if currentLat/Lon are 0.0, filtering is skipped (but ViewModel controls this)
+        val query = collection
+            .whereGreaterThanOrEqualTo("latitude", currentLat - radiusMeters)
+            .whereLessThanOrEqualTo("latitude", currentLat + radiusMeters)
+            .whereGreaterThanOrEqualTo("longitude", currentLon - radiusMeters)
+            .whereLessThanOrEqualTo("longitude", currentLon + radiusMeters)
 
-        val subscription = collection.addSnapshotListener { snapshot, error ->
+        val subscription = query.addSnapshotListener { snapshot, error ->
             if (error != null) { close(error); return@addSnapshotListener }
 
             if (snapshot != null) {
                 val allLocations = snapshot.documents.mapNotNull { doc -> mapDocumentToLocationBase(doc) }
 
-                // 2. Filter in-memory using distance calculation
                 val filteredLocations = allLocations.filter { locationBase ->
-                    // Exclude locations with invalid coordinates
-                    if (locationBase.latitude == 0.0 && locationBase.longitude == 0.0) {
-                        return@filter false
-                    }
 
                     val locationPoint = Location("LocationPoint").apply {
                         latitude = locationBase.latitude
@@ -168,7 +149,6 @@ class FirestoreLocationRepository(
 
                     val distance = userLocation.distanceTo(locationPoint)
 
-                    // Include if the distance is within the set radius
                     distance <= radiusMeters
                 }
 

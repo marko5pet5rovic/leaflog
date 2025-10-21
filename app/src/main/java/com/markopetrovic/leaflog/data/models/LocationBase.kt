@@ -13,5 +13,5 @@ sealed interface LocationBase {
     val latitude: Double
     val longitude: Double
     val points: Int
-    val typeString: String
+    val type: String
 }

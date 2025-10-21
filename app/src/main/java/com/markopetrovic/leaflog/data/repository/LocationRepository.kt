@@ -5,7 +5,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
 interface LocationRepository {
-    fun getAllLocations(): Flow<List<LocationBase>>
     fun getLiveTopLocations(limit: Long): Flow<List<LocationBase>>
     suspend fun addLocation(location: LocationBase): Boolean
     suspend fun getLocationById(id: String): LocationBase?

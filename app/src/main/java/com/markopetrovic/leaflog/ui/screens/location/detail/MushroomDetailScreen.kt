@@ -91,9 +91,9 @@ fun MushroomDetailScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = if (location.isEdible) "Edible (Very rare!)" else "Non-Edible / Unknown",
+                text = if (location.edible) "Edible (Very rare!)" else "Non-Edible / Unknown",
                 style = MaterialTheme.typography.titleMedium,
-                color = if (location.isEdible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                color = if (location.edible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
             )
             Spacer(modifier = Modifier.height(24.dp))
 

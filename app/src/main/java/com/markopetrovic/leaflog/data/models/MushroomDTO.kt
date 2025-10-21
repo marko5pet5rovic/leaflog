@@ -11,11 +11,10 @@ data class MushroomDTO(
     override val longitude: Double = 0.0,
     override val points: Int = 0,
 
-    @get:PropertyName("type")
-    override val typeString: String = LocationType.MUSHROOM.typeName,
+    override val type: String = LocationType.MUSHROOM.typeName,
 
     val imageUrl: String? = null,
-    val isEdible: Boolean = false,
+    val edible: Boolean = false,
     val habitat: String = "",
 
     val userId: String = ""

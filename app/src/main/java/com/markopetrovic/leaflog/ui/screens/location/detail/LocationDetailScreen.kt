@@ -90,7 +90,7 @@ fun LocationDetailScreen(
 
                 else -> {
                     Text(
-                        "Location details unavailable or ID mismatch. Type: ${location?.typeString ?: "Unknown"}",
+                        "Location details unavailable or ID mismatch. Type: ${location?.type ?: "Unknown"}",
                         color = MaterialTheme.colorScheme.error
                     )
                 }

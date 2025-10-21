@@ -75,7 +75,7 @@ class AddNewMushroomViewModel(
                 longitude = latLng.longitude,
                 points = 0,
                 imageUrl = imageUrl,
-                isEdible = _isEdible.value,
+                edible = _isEdible.value,
                 habitat = ""
             )
 

@@ -35,23 +35,6 @@ class FirestoreProfileRepository(
         awaitClose { subscription.remove() }
     }
 
-    override suspend fun getTopUsers(limit: Long): List<ProfileDTO> {
-        return try {
-            collection
-                .orderBy("totalPoints", Query.Direction.DESCENDING)
-                .limit(limit)
-                .get()
-                .await()
-                .documents
-                .mapNotNull { doc ->
-                    doc.toObject(ProfileDTO::class.java)?.copy(uid = doc.id)
-                }
-        } catch (e: Exception) {
-            println("CRITICAL ERROR: Failed to fetch top users. Error: ${e.message}")
-            emptyList()
-        }
-    }
-
     override suspend fun getUserProfile(uid: String): ProfileDTO? {
         return try {
             collection.document(uid).get().await().toObject(ProfileDTO::class.java)?.copy(uid = uid)

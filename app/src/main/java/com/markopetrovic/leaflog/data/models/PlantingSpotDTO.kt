@@ -11,11 +11,9 @@ data class PlantingSpotDTO(
     override val longitude: Double = 0.0,
     override val points: Int = 0,
 
-    @get:PropertyName("typeString")
-    override val typeString: String = LocationType.PLANTING_SPOT.typeName,
+    override val type: String = LocationType.PLANTING_SPOT.typeName,
 
-    @get:PropertyName("fenced")
-    val isFenced: Boolean = false,
+    val fenced: Boolean = false,
 
     val soilType: String = "",
 

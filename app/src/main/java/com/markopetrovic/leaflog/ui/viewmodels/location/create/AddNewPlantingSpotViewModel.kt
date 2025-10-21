@@ -45,7 +45,7 @@ class AddNewPlantingSpotViewModel(
             description = _description.value,
             latitude = initialLocation.latitude,
             longitude = initialLocation.longitude,
-            isFenced = _isFenced.value,
+            fenced = _isFenced.value,
             soilType = _soilType.value
         )
 
