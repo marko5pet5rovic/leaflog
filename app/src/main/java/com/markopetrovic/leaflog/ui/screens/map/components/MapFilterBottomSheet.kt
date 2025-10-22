@@ -47,7 +47,7 @@ fun MapFilterBottomSheet(
                 LocationFilter.entries.forEach { filter ->
                     FilterChip(
                         onClick = { onFilterSelected(filter) },
-                        label = { Text(filter.name.replace("_", " ").toUpperCase()) },
+                        label = { Text(filter.name.replace("_", " ")) },
                         selected = filter == activeFilter,
                         modifier = Modifier.fillMaxWidth()
                     )

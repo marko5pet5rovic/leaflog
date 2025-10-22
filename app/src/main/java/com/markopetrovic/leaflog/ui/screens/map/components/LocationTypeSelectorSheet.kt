@@ -10,6 +10,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddLocation
 import androidx.compose.material.icons.filled.LocalFlorist
 import androidx.compose.material.icons.filled.FilterHdr
+import androidx.compose.material.icons.filled.Park
+import androidx.compose.material.icons.filled.Spa
 import androidx.compose.ui.graphics.vector.ImageVector
 
 enum class LocationType {
@@ -44,7 +46,7 @@ fun LocationTypeSelectorSheet(
 
                 LocationTypeElevatedButton(
                     label = "New Plant",
-                    icon = Icons.Default.LocalFlorist,
+                    icon = Icons.Default.Park,
                     onClick = { onTypeSelected(LocationType.PLANT) }
                 )
 
@@ -52,7 +54,7 @@ fun LocationTypeSelectorSheet(
 
                 LocationTypeElevatedButton(
                     label = "New Mushroom",
-                    icon = Icons.Default.FilterHdr,
+                    icon = Icons.Default.Spa,
                     onClick = { onTypeSelected(LocationType.MUSHROOM) }
                 )
 

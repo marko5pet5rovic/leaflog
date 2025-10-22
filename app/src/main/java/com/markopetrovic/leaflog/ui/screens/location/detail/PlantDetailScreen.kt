@@ -92,7 +92,6 @@ fun PlantDetailScreen(
             }
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 5. Coordinates
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text(text = "Coordinates", style = MaterialTheme.typography.titleSmall)

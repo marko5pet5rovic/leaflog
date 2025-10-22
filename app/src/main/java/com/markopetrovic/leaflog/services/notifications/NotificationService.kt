@@ -82,7 +82,7 @@ class NotificationService : Service() {
                             if (meantime) showNotification(location);
                         }
                     }
-                } catch (e: Exception) { /* Handle security exception */ }
+                } catch (e: Exception) {  }
                 delay(10.seconds)
             }
         }

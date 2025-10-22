@@ -100,7 +100,6 @@ fun ProfileScreen(
             }
             Spacer(modifier = Modifier.height(16.dp))
 
-            // NAME FIELDS (Display)
             Text(
                 text = "${displayProfile?.firstName ?: ""} ${displayProfile?.lastName ?: ""}",
                 style = MaterialTheme.typography.headlineMedium

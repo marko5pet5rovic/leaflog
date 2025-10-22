@@ -24,8 +24,6 @@ sealed class Screen(
     object AddNewPlant : Screen("add_new_plant")
     object AddNewMushroom : Screen("add_new_mushroom")
     object AddNewPlantingSpot : Screen("add_new_planting_spot")
-
-    // Novo: ruta za ekran za uređivanje profila
     object ProfileEdit : Screen("profile_edit")
 
     object LocationDetail : Screen(
