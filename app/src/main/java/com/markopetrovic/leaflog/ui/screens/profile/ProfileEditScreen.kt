@@ -1,6 +1,7 @@
 package com.markopetrovic.leaflog.ui.screens.profile
 
 import android.net.Uri
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -33,7 +34,7 @@ import com.markopetrovic.leaflog.ui.viewmodels.ProfileViewModelFactory
 @Composable
 fun ProfileEditScreen(
     navController: NavController,
-    authViewModel: AuthViewModel = viewModel()
+    authViewModel: AuthViewModel = viewModel(),
 ) {
     val context = LocalContext.current
     val authState by authViewModel.authState.collectAsState()
@@ -46,7 +47,8 @@ fun ProfileEditScreen(
         }
     }
 
-    val profileViewModel: ProfileViewModel = viewModel(
+    val profileViewModel = viewModel<ProfileViewModel>(
+        viewModelStoreOwner = LocalContext.current as ComponentActivity,
         key = currentUserId,
         factory = ProfileViewModelFactory(
             currentUserId = currentUserId,

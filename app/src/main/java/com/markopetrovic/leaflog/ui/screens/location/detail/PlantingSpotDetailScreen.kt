@@ -41,7 +41,7 @@ fun PlantingSpotDetailScreen(
             color = MaterialTheme.colorScheme.primary
         )
         Text(
-            text = "Место за садњу (Spot)",
+            text = "Planting spot",
             style = MaterialTheme.typography.bodyMedium
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -55,17 +55,25 @@ fun PlantingSpotDetailScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Тип земљишта: ${location.soilType.ifBlank { "Није дефинисано" }}",
+            text = "Soil type: ${location.soilType.ifBlank { "Unknown" }}",
             style = MaterialTheme.typography.titleMedium
         )
-        DetailRow(title = "Опис локације", content = location.description)
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = if (location.fenced) "Location is fenced!" else "Location is not fenced",
+            style = MaterialTheme.typography.titleMedium,
+            color = if (location.fenced) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+        )
+        DetailRow(title = "Description", content = location.description)
 
         Spacer(modifier = Modifier.height(24.dp))
+
 
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(text = "Coordinates", style = MaterialTheme.typography.titleSmall)
-                Text(text = "Lat: ${location.latitude}, Lon: ${location.longitude}", style = MaterialTheme.typography.bodyMedium)
+                Text(text = "Lat: ${location.latitude} \nLon: ${location.longitude}", style = MaterialTheme.typography.bodyMedium)
             }
         }
     }

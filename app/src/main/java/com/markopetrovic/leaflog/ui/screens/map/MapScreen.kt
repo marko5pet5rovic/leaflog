@@ -82,13 +82,7 @@ fun MapScreen(
 
     val allPermissionsGranted = MapPermissions {
         isLocationPermissionGranted = true
-        try {
-            fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
-                location?.let {
-                    mapViewModel.updateGpsLocation(LatLng(it.latitude, it.longitude))
-                }
-            }
-        } catch (e: SecurityException) { /* Handle security exception */ }
+        mapViewModel.listenToGPSLocationChange(fusedLocationClient)
     }
     LaunchedEffect(allPermissionsGranted) {
         if (allPermissionsGranted) isLocationPermissionGranted = true
@@ -111,8 +105,7 @@ fun MapScreen(
             isLocationEnabled = isLocationPermissionGranted,
             content = {
                 if (currentGpsLocation.latitude != 0.0 || currentGpsLocation.longitude != 0.0) {
-
-                    key("RadiusCircle") {
+                    key(currentGpsLocation, radiusFilter) {
                         Circle(
                             center = currentGpsLocation,
                             radius = radiusFilter.toDouble(),
@@ -131,7 +124,6 @@ fun MapScreen(
                             is PlantDTO -> BitmapDescriptorFactory.HUE_GREEN
                             is MushroomDTO -> BitmapDescriptorFactory.HUE_YELLOW
                             is PlantingSpotDTO -> BitmapDescriptorFactory.HUE_BLUE
-                            else -> BitmapDescriptorFactory.HUE_RED
                         }
 
                         Marker(
@@ -156,6 +148,7 @@ fun MapScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.End
         ) {
+            /*
             FloatingActionButton(
                 onClick = { mapViewModel.toggleFilterSheet(true) },
                 modifier = Modifier.padding(bottom = 8.dp),
@@ -164,7 +157,7 @@ fun MapScreen(
             ) {
                 Icon(Icons.Filled.FilterList, contentDescription = "Toggle Filters")
             }
-
+            */
             FloatingActionButton(
                 onClick = { mapViewModel.toggleBottomSheet(true) }
             ) {

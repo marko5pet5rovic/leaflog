@@ -7,6 +7,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
+import com.markopetrovic.leaflog.data.models.ProfileDTO
+import com.markopetrovic.leaflog.di.AppContainer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -61,16 +63,21 @@ class AuthViewModel : ViewModel() {
 
                 if (result.user != null) {
                     _authState.value = AuthState.Authenticated(result.user!!.uid)
+                    AppContainer.profileRepository.updateProfile(ProfileDTO(
+                        uid =result.user!!.uid,
+                        username = result.user!!.uid,
+                        firstName = "Anonymous",
+                        ))
                 } else {
-                    _authState.value = AuthState.Error("Регистрација није успела. Непозната грешка.")
+                    _authState.value = AuthState.Error("Registration failed.")
                 }
 
             } catch (e: Exception) {
                 val errorMessage = when (e) {
-                    is FirebaseAuthWeakPasswordException -> "Лозинка мора имати најмање 6 карактера."
-                    is FirebaseAuthInvalidCredentialsException -> "Неисправан формат е-поште."
-                    is FirebaseAuthUserCollisionException -> "Корисник са том е-поштом већ постоји."
-                    else -> "Грешка при регистрацији: ${e.localizedMessage}"
+                    is FirebaseAuthWeakPasswordException -> "Password must have > 6 characters."
+                    is FirebaseAuthInvalidCredentialsException -> "Invalid email."
+                    is FirebaseAuthUserCollisionException -> "User already exists."
+                    else -> "Registration failed: ${e.localizedMessage}"
                 }
                 _authState.value = AuthState.Error(errorMessage)
                 Log.e("AuthViewModel", "Sign Up Error: $e")

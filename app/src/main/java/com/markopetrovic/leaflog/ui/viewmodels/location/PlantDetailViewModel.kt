@@ -38,7 +38,7 @@ class PlantDetailViewModel(
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    private val _userAlreadyInteracted = MutableStateFlow(false)
+    private val _userAlreadyInteracted = MutableStateFlow(true)
     val userAlreadyInteracted: StateFlow<Boolean> = _userAlreadyInteracted.asStateFlow()
 
     init {
@@ -71,6 +71,7 @@ class PlantDetailViewModel(
                 } else if (fetchedLocation != null) {
                     _publisher.value = ProfileDTO(username = "System Logger")
                 }
+                _userAlreadyInteracted.value = !locationRepository.canGivePoints(locationId, currentUserId)
             } catch (e: Exception) {
                 println("ERROR fetching location details: ${e.message}")
             } finally {
@@ -92,14 +93,10 @@ class PlantDetailViewModel(
             val success = locationRepository.addPoints(currentLocation.id, currentUserId, points)
 
             if (success) {
-                val updatedLocation = when (currentLocation) {
+                _location.value = when (currentLocation) {
                     is PlantDTO -> currentLocation.copy(points = currentLocation.points + points)
                     is MushroomDTO -> currentLocation.copy(points = currentLocation.points + points)
                     is PlantingSpotDTO -> currentLocation.copy(points = currentLocation.points + points)
-                    else -> null
-                }
-                if (updatedLocation != null) {
-                    _location.value = updatedLocation
                 }
                 _userAlreadyInteracted.value = true
             } else {

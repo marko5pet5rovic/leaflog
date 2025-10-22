@@ -62,7 +62,12 @@ fun MushroomDetailScreen(
         Column(modifier = Modifier.padding(16.dp)) {
             Text(text = location.name, style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
             Text(
-                text = "Mushroom - Habitat: ${location.habitat}",
+                text = "Mushroom",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "Habitat: ${location.habitat}",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -91,7 +96,7 @@ fun MushroomDetailScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = if (location.edible) "Edible (Very rare!)" else "Non-Edible / Unknown",
+                text = if (location.edible) "Edible!" else "Non-Edible / Unknown",
                 style = MaterialTheme.typography.titleMedium,
                 color = if (location.edible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
             )
@@ -100,7 +105,7 @@ fun MushroomDetailScreen(
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text(text = "Coordinates", style = MaterialTheme.typography.titleSmall)
-                    Text(text = "Lat: ${location.latitude}, Lon: ${location.longitude}", style = MaterialTheme.typography.bodyMedium)
+                    Text(text = "Lat: ${location.latitude}, \nLon: ${location.longitude}", style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }

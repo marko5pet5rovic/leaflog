@@ -21,8 +21,8 @@ fun LoginScreen(
     val authState by authViewModel.authState.collectAsState()
     val isLoading by authViewModel.isLoading.collectAsState()
 
-    var email by remember { mutableStateOf("test@example.com") }
-    var password by remember { mutableStateOf("password") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
 
     LaunchedEffect(authState) {
         if (authState is AuthState.Authenticated) {

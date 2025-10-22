@@ -1,7 +1,11 @@
 package com.markopetrovic.leaflog.ui.viewmodels
 
+import android.location.Location
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.markopetrovic.leaflog.data.models.LocationBase
@@ -17,7 +21,10 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.markopetrovic.leaflog.di.AppContainer
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.tasks.await
+import kotlin.time.Duration.Companion.seconds
 
 private const val MAX_RADIUS_METERS = 5000f // 5km
 private const val TAG = "MapViewModel"
@@ -65,8 +72,44 @@ class MapViewModel() : ViewModel() {
         startLocationCollection()
     }
 
+    fun listenToGPSLocationChange(locProvider : FusedLocationProviderClient) {
+        viewModelScope.launch {
+            while (true) {
+                try {
+                    locProvider.lastLocation.addOnSuccessListener { location: Location? ->
+                        location?.let {
+                            updateGpsLocation(LatLng(it.latitude, it.longitude))
+                        }
+                    }
+                } catch (e: SecurityException) { /* Handle security exception */ }
+                delay(1.seconds)
+            }
+        }
+    }
+    fun hasDistanceChanged(
+        latLng1: LatLng,
+        latLng2: LatLng
+    ): Boolean {
+
+        val location1 = Location("point A").apply {
+            latitude = latLng1.latitude
+            longitude = latLng1.longitude
+        }
+
+        val location2 = Location("point B").apply {
+            latitude = latLng2.latitude
+            longitude = latLng2.longitude
+        }
+
+        val distanceInMeters = location1.distanceTo(location2)
+
+        return distanceInMeters > 5.0f
+    }
+
     fun updateGpsLocation(latLng: LatLng) {
-        _currentGpsLocation.value = latLng
+        if (hasDistanceChanged(_currentGpsLocation.value, latLng)) {
+            _currentGpsLocation.value = latLng
+        }
         _cameraPosition.value = CameraPosition.fromLatLngZoom(latLng, 14f)
     }
 

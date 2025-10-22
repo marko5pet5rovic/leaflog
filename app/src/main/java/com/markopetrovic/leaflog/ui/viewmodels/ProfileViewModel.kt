@@ -86,16 +86,6 @@ class ProfileViewModel(
         _selectedImageUri.value = uri
     }
 
-    fun toggleEditMode() {
-        val newState = !_isEditing.value
-        _isEditing.value = newState
-        if (!newState) {
-            _editableProfile.value = _profile.value?.copy() ?: ProfileDTO(uid = currentUserId)
-            _selectedImageUri.value = null
-        }
-        _saveStatus.value = null
-    }
-
     fun updateFirstName(name: String) {
         _editableProfile.update { it.copy(firstName = name) }
     }

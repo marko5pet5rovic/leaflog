@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,7 +50,7 @@ fun BottomNavContainer(
                 actions = {
                     if (currentRoute == Screen.BottomNavScreen.Map.route) {
                         IconButton(onClick = { mapViewModel.toggleFilterSheet(true) }) {
-                            Icon(Icons.Default.List, contentDescription = "Filter Locations")
+                            Icon(Icons.Filled.FilterList, contentDescription = "Filter Locations")
                         }
                     }
                     if (currentRoute == Screen.BottomNavScreen.Profile.route) {

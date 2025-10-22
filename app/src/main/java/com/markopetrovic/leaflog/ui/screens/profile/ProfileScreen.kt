@@ -1,5 +1,6 @@
 package com.markopetrovic.leaflog.ui.screens.profile
 
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -15,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -47,19 +49,16 @@ fun ProfileScreen(
         return
     }
 
-    val profileViewModel: ProfileViewModel? = if (currentUserId.isNotEmpty()) {
-        viewModel(
-            key = currentUserId,
-            factory = ProfileViewModelFactory(
-                currentUserId = currentUserId,
-                profileRepository = AppContainer.profileRepository,
-                storageRepository = AppContainer.storageRepository,
-                locationRepository = AppContainer.locationRepository
-            )
+    val profileViewModel = viewModel<ProfileViewModel>(
+        viewModelStoreOwner = LocalContext.current as ComponentActivity,
+        key = currentUserId,
+        factory = ProfileViewModelFactory(
+            currentUserId = currentUserId,
+            profileRepository = AppContainer.profileRepository,
+            storageRepository = AppContainer.storageRepository,
+            locationRepository = AppContainer.locationRepository
         )
-    } else {
-        null
-    }
+    )
 
     val profileData = profileViewModel?.profile?.collectAsState()?.value
     val displayProfile = profileData ?: profileViewModel?.editableProfile?.collectAsState()?.value

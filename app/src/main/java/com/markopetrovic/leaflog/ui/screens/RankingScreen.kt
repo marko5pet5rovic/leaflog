@@ -106,7 +106,7 @@ fun RankingScreen(
 
                                 RankingCard(
                                     index = index,
-                                    title = if (isCurrentUser) "${profile.username} (You)" else profile.username,
+                                    title = if (isCurrentUser) "${profile.firstName} ${profile.lastName} (You)" else profile.firstName + profile.lastName,
                                     points = profile.totalPoints,
                                     isTop3 = index < 3,
                                     isCurrentUser = isCurrentUser,
@@ -143,7 +143,7 @@ private fun RankingCard(
 
     val containerColor = when {
         isCurrentUser -> MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-        isTop3 -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        //isTop3 -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         else -> MaterialTheme.colorScheme.surface
     }
 

@@ -1,7 +1,10 @@
 package com.markopetrovic.leaflog.data.repository
 
 import InteractionDTO
+import android.content.ContentValues.TAG
 import android.location.Location
+import android.util.Log
+import androidx.compose.ui.text.toLowerCase
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -24,10 +27,9 @@ class FirestoreLocationRepository(
         collection.document(locationId).collection("interactions")
 
     private fun mapDocumentToLocationBase(doc: DocumentSnapshot): LocationBase? {
-        val typeKey = if (doc.contains("typeString")) "typeString" else "type"
-        val typeValue = doc.getString(typeKey) ?: return null
+        val typeValue = doc.getString("type") ?: return null
 
-        val locationType = LocationType.entries.firstOrNull { it.typeName == typeValue }
+        val locationType = LocationType.entries.firstOrNull { it.typeName.lowercase() == typeValue.lowercase() }
 
         return when (locationType) {
             LocationType.PLANT -> doc.toObject(PlantDTO::class.java)?.copy(id = doc.id)
@@ -75,6 +77,22 @@ class FirestoreLocationRepository(
     override suspend fun getLocationById(id: String): LocationBase? {
         val doc = collection.document(id).get().await();
         return mapDocumentToLocationBase(doc)
+    }
+
+    override suspend fun canGivePoints(locationId: String, userId: String): Boolean {
+        val documentRef = getInteractionsCollection(locationId).document(userId)
+
+        return try {
+            val documentSnapshot = documentRef.get().await()
+            Log.d(TAG, userId)
+            Log.d(TAG, documentSnapshot.exists().toString())
+            Log.d(TAG, "documentSnapshot.exists().toString()")
+            !documentSnapshot.exists()
+
+        } catch (e: Exception) {
+            println("Error checking document existence: ${e.message}")
+            true
+        }
     }
 
     override suspend fun addPoints(locationId: String, userId: String, points: Int): Boolean {

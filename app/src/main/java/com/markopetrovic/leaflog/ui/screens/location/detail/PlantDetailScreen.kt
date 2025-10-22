@@ -96,7 +96,7 @@ fun PlantDetailScreen(
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text(text = "Coordinates", style = MaterialTheme.typography.titleSmall)
-                    Text(text = "Lat: ${location.latitude}, Lon: ${location.longitude}", style = MaterialTheme.typography.bodyMedium)
+                    Text(text = "Lat: ${location.latitude}, \nLon: ${location.longitude}", style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }

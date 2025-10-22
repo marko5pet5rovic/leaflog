@@ -12,6 +12,7 @@ interface LocationRepository {
     suspend fun countUserLocations(userId: String): Int
     suspend fun sumUserPoints(userId: String): Long
 
+    suspend fun canGivePoints(locationId: String, userId: String) : Boolean
     fun getLocationsWithinRadius(
         currentLat: Double,
         currentLon: Double,

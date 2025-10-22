@@ -70,18 +70,19 @@ class NotificationService : Service() {
         scope.launch {
             while (true) {
                 try {
-                    var location = getLatestLocation()!!
-                    var fetchedLocations = getClosePlants(location)
-                    var meantime = locationIDs.isNotEmpty()
+                    val location = getLatestLocation()!!
+                    val fetchedLocations = getClosePlants(location)
+                    val meantime = locationIDs.isNotEmpty()
                     Log.d(TAG, fetchedLocations.size.toString())
 
                     for (location in fetchedLocations) {
                         if (!locationIDs.contains(location.id)) {
+
                             locationIDs.add(location.id)
                             if (meantime) showNotification(location);
                         }
                     }
-                } catch (e: SecurityException) { /* Handle security exception */ }
+                } catch (e: Exception) { /* Handle security exception */ }
                 delay(10.seconds)
             }
         }
@@ -120,7 +121,6 @@ class NotificationService : Service() {
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     private fun showNotification(location: LocationBase) {
-
         val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(location.name)
